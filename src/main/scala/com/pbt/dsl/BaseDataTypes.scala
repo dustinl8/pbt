@@ -49,9 +49,6 @@ trait TradeOrder {
   def orderType: OrderType.Value
 }
 
-
-
-
 case class Stock(val ticker: String, val currency: Currency.Value, val stockExchange: StockExchange.Value) extends ExchangeTradedAsset
 
 
