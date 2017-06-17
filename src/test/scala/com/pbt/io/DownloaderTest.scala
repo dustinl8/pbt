@@ -17,6 +17,14 @@ class DownloaderTest extends FunSpec with Matchers {
   describe("Download single stock data") {
     it("sould work") {
 
+      trait x
+      class y extends x
+      val z = new y
+
+      z match {
+        case tmp: x => println("matched on trait")
+        case _ => println("no match")
+      }
 
     }
   }

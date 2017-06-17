@@ -18,8 +18,7 @@ import scala.language.postfixOps
 trait DataDownloadRequest {
   def toUrlString: String
 }
-abstract class DataDownloadRequest2 extends DataDownloadRequest{
-}
+
 
 
 class Downloader extends Actor with ActorLogging {
@@ -32,7 +31,7 @@ class Downloader extends Actor with ActorLogging {
   val child = context.actorOf(Props[Parser], name = "parser")
 
   def receive = {
-    case request : DataDownloadRequest2 => {
+    case request : DataDownloadRequest => {
       log.info(s"${request.getClass} receieved")
       val httpRequest = HttpRequest(uri = request.toUrlString)
       val http = Http(context.system)
@@ -65,6 +64,9 @@ class Parser extends Actor with ActorLogging {
     case _ => log.info("unhandled message received")
   }
 }
+
+
+
 
 object Main {
 
