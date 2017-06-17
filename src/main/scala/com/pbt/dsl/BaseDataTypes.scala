@@ -6,12 +6,19 @@ import java.util.Calendar
   * Created by gcrowell on 2017-06-13.
   */
 
+object Constants {
+  private val _epoch = Calendar.getInstance()
+  _epoch.set(1991, 10, 1)
+
+  def epoch: Calendar = {
+    _epoch
+  }
+}
 
 //TODO StockExchange has a Currency
 object StockExchange extends Enumeration {
   val NYSE, AMEX, TSX, NASDAQ = Value
 }
-
 
 //TODO add forex data
 object Currency extends Enumeration {
@@ -21,6 +28,7 @@ object Currency extends Enumeration {
 
 sealed trait Asset {
   def ticker: String
+
   def currency: Currency.Value
 }
 
@@ -45,12 +53,15 @@ object OrderType extends Enumeration {
 
 trait TradeOrder {
   def asset: Asset
+
   def orderDateTime: Calendar
+
   def orderType: OrderType.Value
+
+  def quantity: Double
 }
 
 case class Stock(val ticker: String, val currency: Currency.Value, val stockExchange: StockExchange.Value) extends ExchangeTradedAsset
-
 
 
 //TODO convert Scala enums to custom (see here http://underscore.io/blog/posts/2014/09/03/enumerations.html)

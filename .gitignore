@@ -62,3 +62,4 @@ project/plugins/project/
 .lib/
 /project/
 /.idea/
+!/project/build.properties
