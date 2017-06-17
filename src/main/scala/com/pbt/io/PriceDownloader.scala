@@ -8,7 +8,7 @@ import com.pbt.dsl.Constants
 /**
   * Created by gcrowell on 2017-06-17.
   */
-case class PriceDownloadRequest(val symbol: String, val startDate: Option[Calendar] = None) extends DataDownloadRequest {
+case class PriceDownloadRequest(val symbol: String, val startDate: Option[Calendar] = None) extends DataDownloadRequest2 {
   override def toUrlString: String = {
     s"https://www.google.com/finance/historical?output=csv&q=$symbol&startdate=" + (startDate match {
       case dt: Some[Calendar] => PriceDownloadRequest.toDateArg(dt.get)

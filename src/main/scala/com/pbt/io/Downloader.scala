@@ -18,52 +18,59 @@ import scala.language.postfixOps
 trait DataDownloadRequest {
   def toUrlString: String
 }
+abstract class DataDownloadRequest2 extends DataDownloadRequest{
+}
 
-case class Downloader(val request: DataDownloadRequest) extends Actor with ActorLogging {
+
+class Downloader extends Actor with ActorLogging {
 
   import akka.pattern.pipe
   import context.dispatcher
 
-  val httpRequest = HttpRequest(uri = request.toUrlString)
-  val http = Http(context.system)
-
   final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
-  private var responceData: String = ""
 
-  override def preStart() = {
-    log.info("preStart")
-    http.singleRequest(httpRequest).pipeTo(self)
-  }
+  val child = context.actorOf(Props[Parser], name = "parser")
 
   def receive = {
+    case request : DataDownloadRequest2 => {
+      log.info(s"${request.getClass} receieved")
+      val httpRequest = HttpRequest(uri = request.toUrlString)
+      val http = Http(context.system)
+      http.singleRequest(httpRequest).pipeTo(child)
+    }
+    case _ => log.info(s"unhandled message received")
+  }
+}
+
+class Parser extends Actor with ActorLogging {
+
+  import context.dispatcher
+
+  //TODO parse data
+  def parseCsvData(csv: String): Unit = {
+    log.info(s"parsing\n$csv")
+  }
+
+  final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+
+  override def receive: Receive = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) =>
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-        responceData = body.utf8String
-        log.info("Got response, body")
+        log.info("http response received")
+        parseCsvData(body.utf8String)
       }
     case resp@HttpResponse(code, _, _, _) =>
       log.info("Request failed, response code: " + code)
       resp.discardEntityBytes()
-    case message: String => sender() ! responceData
-    case _ => println(s"${request.toUrlString} received a message.")
+    case _ => log.info("unhandled message received")
   }
-
 }
 
-object Downloader {
-  def buildDownloadRequest(request: DataDownloadRequest): Props = Props(new Downloader(request))
-}
+object Main {
 
-object ActorSystemRoot {
-  // application entry point
-  // create a new actor system
-  val actorSystem = ActorSystem("actor_system")
-  // create parameter for Actor
-
-  def forwardRequest(request: DataDownloadRequest): ActorRef = {
-    // create Props configuration needed to safely start an actor
-    val actorProps = Downloader.buildDownloadRequest(request)
-    // create (and start) the actor
-    actorSystem.actorOf(actorProps, "an_actor_created_using_value_class")
+  def main(args: Array[String]): Unit = {
+    val actorSystem = ActorSystem("actor_system")
+    val masterRef = actorSystem.actorOf(Props[Downloader], "master_actor")
+    masterRef ! new PriceDownloadRequest("MSFT")
   }
 }
