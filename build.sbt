@@ -2,7 +2,7 @@ name := "pbt"
 
 version := "1.0"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.0.6",
@@ -13,4 +13,4 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
-libraryDependencies += "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.4"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.1"
