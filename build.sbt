@@ -13,3 +13,4 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
+libraryDependencies += "com.rockymadden.stringmetric" %% "stringmetric-core" % "0.27.4"
