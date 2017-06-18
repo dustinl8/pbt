@@ -1,7 +1,6 @@
 package com.pbt.io
 
 import akka.util.Timeout
-import com.pbt.io.ActorSystemRoot.actorSystem
 import org.scalatest.{FunSpec, Matchers}
 
 import language.postfixOps
@@ -18,25 +17,14 @@ class DownloaderTest extends FunSpec with Matchers {
   describe("Download single stock data") {
     it("sould work") {
 
-      val request = PriceDownloadRequest("MSFT")
+      trait x
+      class y extends x
+      val z = new y
 
-      val actorRef = ActorSystemRoot.forwardRequest(request)
-
-      implicit val timeout = Timeout(5 seconds)
-      val future = actorRef ? "whats taking to long"
-      val result = Await.result(future, timeout.duration).asInstanceOf[String]
-      println(result)
-
-//      // import ExecutionContextExecutor
-//      import ActorSystemRoot.actorSystem.dispatcher
-//      // start actor system (no idea what scheduler is or does)
-//      Thread.sleep(1000)
-//      ActorSystemRoot.actorSystem.scheduler.scheduleOnce(100 millis) {
-//        // send message to actor in the system
-//        actorRef ! "test"
-//        actorRef ! "test"
-//      }
-      Thread.sleep(3000)
+      z match {
+        case tmp: x => println("matched on trait")
+        case _ => println("no match")
+      }
 
     }
   }
