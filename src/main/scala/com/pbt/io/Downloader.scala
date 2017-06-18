@@ -134,15 +134,32 @@ class Parser extends Actor with ActorLogging {
 object Main {
 
   def main(args: Array[String]): Unit = {
+    class Testing123 extends Actor with ActorLogging {
+
+      private val masterRef = context.actorOf(Props[Master], name = "master_consumer")
+
+      override def receive: Receive = {
+        case _ => {
+          log.info("beginning test")
+          masterRef ! new PriceDownloadRequest("MSFT")
+          masterRef ! new PriceDownloadRequest("DATA")
+          masterRef ! new PriceDownloadRequest("APPL")
+          masterRef ! new PriceDownloadRequest("FB")
+          masterRef ! new PriceDownloadRequest("GS")
+          masterRef ! new PriceDownloadRequest("NKE")
+        }
+      }
+    }
     val actorSystem = ActorSystem("actor_system")
-    val masterRef = actorSystem.actorOf(Props[Downloader], "master_actor")
-    masterRef ! new PriceDownloadRequest("MSFT")
-    masterRef ! new PriceDownloadRequest("DATA")
-    masterRef ! new PriceDownloadRequest("APPL")
-    masterRef ! new PriceDownloadRequest("FB")
-    masterRef ! new PriceDownloadRequest("GS")
-    masterRef ! new PriceDownloadRequest("NKE")
+
+    val testingRef = actorSystem.actorOf(Props[Testing123], "consuming_system")
+    testingRef ! "request test"
+
 
     println("continue on doing other work while data is downloaded/parsed")
+    Thread.sleep(3000)
+
+    println("execution complete.  stopping actor system...")
+    actorSystem.terminate()
   }
 }
