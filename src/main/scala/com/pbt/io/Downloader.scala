@@ -1,5 +1,8 @@
 package com.pbt.io
 
+import java.text.SimpleDateFormat
+import java.util.Calendar
+
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, Terminated}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -57,7 +60,6 @@ class Master extends Actor with ActorLogging {
   * receives DataDownloadRequest's from Master.
   * downloads (ie. executes single HttpRequest) the request
   * forwards downloaded data (eg. raw csv string data) to it's (only) child (ie. Parser)
-  * TODO accept structured data from Parser
   */
 class Downloader extends Actor with ActorLogging {
 
@@ -85,7 +87,6 @@ class Downloader extends Actor with ActorLogging {
   * 1 Parser instance is started per Downloader instance
   *
   * receives HttpResponse from Downloader
-  * TODO parse and send structured data back to Downloader
   */
 class Parser extends Actor with ActorLogging {
 
@@ -94,23 +95,38 @@ class Parser extends Actor with ActorLogging {
   final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
   override def receive: Receive = {
-    case HttpResponse(StatusCodes.OK, headers, entity, _) =>
+    case HttpResponse(StatusCodes.OK, headers, entity, _) => {
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
         log.info("http response received")
-        parseCsvData(body.utf8String)
+        //TODO save data somewhere
+        val structuredData = parseCsvData(body.utf8String)
+        log.info(structuredData.take(5).toString)
       }
-    case resp@HttpResponse(code, _, _, _) =>
-      // TODO handle StatusCodes != OK
+    }
+    case resp@HttpResponse(code, _, _, _) => {
+      // TODO handle StatusCodes != OK and save log of error
       log.info("Request failed, response code: " + code)
       resp.discardEntityBytes()
+    }
+    case parsedData: Vector[(Calendar, Double, Double, Double, Double, Long)] => {
+      log.info("parsedData received")
+    }
     case _ => log.info("unhandled message received")
   }
 
-  //TODO parse data
-  def parseCsvData(csv: String): Unit = {
+  //TODO make generic
+  def parseCsvData(csv: String): Vector[(Calendar, Double, Double, Double, Double, Long)] = {
     log.info(s"parsing...")
-    //    log.info(csv)
+    csv.split("\n").drop(1).map((csvLine: String) => parseCsvLine(csvLine)).toVector
+  }
 
+  // TODO move to companion object and optimize
+  def parseCsvLine(csvLine: String): (Calendar, Double, Double, Double, Double, Long) = {
+    val format = new SimpleDateFormat("dd-MMM-YYYY")
+    val calendar = Calendar.getInstance()
+    val csv_tokens = csvLine.split(",")
+    calendar.setTime(format.parse(csv_tokens(0)))
+    (calendar, csv_tokens(1).toDouble, csv_tokens(2).toDouble, csv_tokens(3).toDouble, csv_tokens(4).toDouble, csv_tokens(5).toLong)
   }
 }
 
