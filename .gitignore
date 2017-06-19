@@ -63,3 +63,4 @@ project/plugins/project/
 /project/
 /.idea/
 !/project/build.properties
+/metastore_db/**/**

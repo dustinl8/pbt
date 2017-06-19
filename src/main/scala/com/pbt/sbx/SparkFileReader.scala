@@ -45,7 +45,7 @@ object SparkDemo extends App {
     stockReader.show(10)
 
 
-    
+
     //    val schemaTyped = new StructType()
     //      .add("a", IntegerType)
     //      .add("b", StringType)
