@@ -1,5 +1,6 @@
 package com.pbt.io
 
+import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
@@ -12,7 +13,6 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.ByteString
 
 import language.postfixOps
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 /**
@@ -97,7 +97,7 @@ class Parser extends Actor with ActorLogging {
   override def receive: Receive = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-        log.info("http response received")
+        log.info(s"http response received")
         //TODO save data somewhere
         val structuredData = parseCsvData(body.utf8String)
         log.info(structuredData.take(5).toString)
@@ -108,41 +108,85 @@ class Parser extends Actor with ActorLogging {
       log.info("Request failed, response code: " + code)
       resp.discardEntityBytes()
     }
-    case parsedData: Vector[(Calendar, Double, Double, Double, Double, Long)] => {
-      log.info("parsedData received")
-    }
     case _ => log.info("unhandled message received")
   }
 
   //TODO make generic
-  def parseCsvData(csv: String): Vector[(Calendar, Double, Double, Double, Double, Long)] = {
+  def parseCsvData(csv: String): Vector[(Long, Double, Double, Double, Double, Long)] = {
     log.info(s"parsing...")
     csv.split("\n").drop(1).map((csvLine: String) => parseCsvLine(csvLine)).toVector
   }
 
-  // TODO move to companion object and optimize
-  def parseCsvLine(csvLine: String): (Calendar, Double, Double, Double, Double, Long) = {
-    val format = new SimpleDateFormat("dd-MMM-YYYY")
-    val calendar = Calendar.getInstance()
+  // TODO move to companion object
+  def parseCsvLine(csvLine: String): (Long, Double, Double, Double, Double, Long) = {
+
+    val month_map = Map(
+      "Jan" -> "01",
+      "Feb" -> "02",
+      "Mar" -> "03",
+      "Apr" -> "04",
+      "May" -> "05",
+      "Jun" -> "06",
+      "Jul" -> "07",
+      "Aug" -> "08",
+      "Sep" -> "09",
+      "Oct" -> "10",
+      "Nov" -> "11",
+      "Dec" -> "12"
+    )
+
     val csv_tokens = csvLine.split(",")
-    calendar.setTime(format.parse(csv_tokens(0)))
-    (calendar, csv_tokens(1).toDouble, csv_tokens(2).toDouble, csv_tokens(3).toDouble, csv_tokens(4).toDouble, csv_tokens(5).toLong)
+    val date_tokens = csv_tokens(0).split("-")
+
+    val yyyyMMdd = (
+      date_tokens(2) match {
+        case x if (x < "10") => s"200$x"
+        case x if (x < "20") => s"20$x"
+        case x if (x > "20") => s"19$x"
+        case _ => "9999"
+      }) + (
+      month_map.getOrElse(date_tokens(1), "00")
+      ) + (
+      date_tokens(0) match {
+        case x if (x < "10") => s"0$x"
+        case x if (x > "10") => x
+        case _ => "31"
+      })
+
+    (yyyyMMdd.toLong, csv_tokens(1).toDouble, csv_tokens(2).toDouble, csv_tokens(3).toDouble, csv_tokens(4).toDouble, csv_tokens(5).toLong)
   }
 }
 
 
-object Main {
+object DemoDownloader extends App {
 
-  def main(args: Array[String]): Unit = {
+  override def main(args: Array[String]): Unit = {
+    class Testing123 extends Actor with ActorLogging {
+
+      private val masterRef = context.actorOf(Props[Master], name = "master_consumer")
+
+      override def receive: Receive = {
+        case _ => {
+          log.info("beginning test")
+          masterRef ! new PriceDownloadRequest("MSFT")
+          masterRef ! new PriceDownloadRequest("DATA")
+          masterRef ! new PriceDownloadRequest("APPL")
+          masterRef ! new PriceDownloadRequest("FB")
+          masterRef ! new PriceDownloadRequest("GS")
+          masterRef ! new PriceDownloadRequest("NKE")
+        }
+      }
+    }
     val actorSystem = ActorSystem("actor_system")
-    val masterRef = actorSystem.actorOf(Props[Downloader], "master_actor")
-    masterRef ! new PriceDownloadRequest("MSFT")
-    masterRef ! new PriceDownloadRequest("DATA")
-    masterRef ! new PriceDownloadRequest("APPL")
-    masterRef ! new PriceDownloadRequest("FB")
-    masterRef ! new PriceDownloadRequest("GS")
-    masterRef ! new PriceDownloadRequest("NKE")
+
+    val testingRef = actorSystem.actorOf(Props[Testing123], "consuming_system")
+    testingRef ! "request test"
+
 
     println("continue on doing other work while data is downloaded/parsed")
+    Thread.sleep(3000)
+
+    println("execution complete.  stopping actor system...")
+    actorSystem.terminate()
   }
 }
